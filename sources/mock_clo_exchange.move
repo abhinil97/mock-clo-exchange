@@ -2,12 +2,14 @@ module mock_clo::mock_clo_exchange {
     use aptos_framework::fungible_asset::{Self as fa, Metadata, MintRef, BurnRef, TransferRef};
     use aptos_framework::object::{Self as object, Object};
     use aptos_framework::primary_fungible_store;
+    use aptos_framework::account::{Self, SignerCapability};
     use std::signer;
     use std::string;
     use std::option;
 
-    /// Holds all config and capabilities for a particular shareclass
-    /// This resource is stored **under the address of the shareclass `Metadata` object**.
+    // Holds all config and capabilities for a particular shareclass
+    // This resource is stored **under the address of the shareclass `Metadata` object**.
+    #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
     struct ShareClassData has key {
         /// Metadata object address of the accepted underlying asset
         underlying_metadata: address,
@@ -19,6 +21,28 @@ module mock_clo::mock_clo_exchange {
         transfer_cap: TransferRef,
     }
 
+    struct ProtocolConfig has key {
+        admin: address,
+        vault_signer_cap: SignerCapability, // Signer capability for the protocol vault
+    }
+
+    /// Called automatically when the module is published
+    fun init_module(admin: &signer) {
+        let admin_addr = signer::address_of(admin);
+        assert!(admin_addr == @mock_clo, 0);
+        
+        // Create a resource account for the protocol vault
+        let (vault_signer, vault_signer_cap) = account::create_resource_account(admin, b"VAULT");
+        let _vault_addr = signer::address_of(&vault_signer);
+
+        move_to(
+            admin,
+            ProtocolConfig {
+                admin: admin_addr,
+                vault_signer_cap,
+            }
+        );
+    }
 
     public entry fun create_share_class(
         admin: &signer,
@@ -28,7 +52,10 @@ module mock_clo::mock_clo_exchange {
         underlying_token_addr: address,
         price_per_share: u64,
         max_supply: u128,
-    ) {
+    ) acquires ProtocolConfig {
+        let admin_addr = signer::address_of(admin);
+        assert!(admin_addr == @mock_clo, 0);
+
         let constructor_ref = &object::create_named_object(admin, symbol);
 
         let max_supply_opt = if (max_supply == 0) {
@@ -64,19 +91,24 @@ module mock_clo::mock_clo_exchange {
             },
         );
 
+        // Ensure the vault can hold the underlying asset
         let underlying_metadata = object::address_to_object<Metadata>(underlying_token_addr);
+        let config = borrow_global<ProtocolConfig>(@mock_clo);
+        let vault_signer = account::create_signer_with_capability(&config.vault_signer_cap);
+        let vault_addr = signer::address_of(&vault_signer);
+        
         primary_fungible_store::ensure_primary_store_exists(
-            signer::address_of(&share_signer),
+            vault_addr, 
             underlying_metadata,
         );
     }
 
-    
+    /// Investor deposits underlying asset and receives shares
     public entry fun request_issuance(
         investor: &signer,
         share_class: Object<Metadata>,
         underlying_amount: u64,
-    ) acquires ShareClassData {
+    ) acquires ShareClassData, ProtocolConfig {
         let share_addr = object::object_address(&share_class);
         let data = borrow_global_mut<ShareClassData>(share_addr);
 
@@ -86,41 +118,45 @@ module mock_clo::mock_clo_exchange {
         let underlying_meta = object::address_to_object<Metadata>(data.underlying_metadata);
         let underlying_fa = primary_fungible_store::withdraw(investor, underlying_meta, underlying_amount);
 
-        primary_fungible_store::deposit(share_addr, underlying_fa);
+        // Deposit underlying asset to the protocol vault
+        let config = borrow_global<ProtocolConfig>(@mock_clo);
+        let vault_signer = account::create_signer_with_capability(&config.vault_signer_cap);
+        let vault_addr = signer::address_of(&vault_signer);
+        primary_fungible_store::deposit(vault_addr, underlying_fa);
 
+        // Mint and send shares to investor
         let new_shares = fa::mint(&data.mint_cap, shares_to_mint);
         primary_fungible_store::deposit(signer::address_of(investor), new_shares);
     }
 
-    // Redeem `share_amount` shares for their proportional underlying.
+    /// Investor redeems shares for underlying asset
     public entry fun request_redemption(
         investor: &signer,
         share_class: Object<Metadata>,
         share_amount: u64,
-    ) acquires ShareClassData {
+    ) acquires ShareClassData, ProtocolConfig {
         let share_addr = object::object_address(&share_class);
         let data = borrow_global_mut<ShareClassData>(share_addr);
 
         let underlying_amount: u64 = share_amount * data.price_per_share;
 
+        // Burn investor's shares
         let shares_fa = primary_fungible_store::withdraw(investor, share_class, share_amount);
-
         fa::burn(&data.burn_cap, shares_fa);
 
+        // Withdraw underlying asset from vault and send to investor
         let underlying_meta = object::address_to_object<Metadata>(data.underlying_metadata);
-        let treasury_store = primary_fungible_store::primary_store(
-            share_addr,
-            underlying_meta,
+        let config = borrow_global<ProtocolConfig>(@mock_clo);
+        let vault_signer = account::create_signer_with_capability(&config.vault_signer_cap);
+        
+        let underlying_to_return = primary_fungible_store::withdraw(
+            &vault_signer, 
+            underlying_meta, 
+            underlying_amount
         );
-        let underlying_to_return = fa::withdraw_with_ref(
-            &data.transfer_cap,
-            treasury_store,
-            underlying_amount,
-        );
-  
+        
         primary_fungible_store::deposit(signer::address_of(investor), underlying_to_return);
     }
-
 
     #[view]
     public fun exchange_price(metadata_addr: address): u64 acquires ShareClassData {
@@ -130,5 +166,17 @@ module mock_clo::mock_clo_exchange {
     #[view]
     public fun underlying_metadata(metadata_addr: address): address acquires ShareClassData {
         borrow_global<ShareClassData>(metadata_addr).underlying_metadata
+    }
+
+    #[view]
+    public fun get_vault_address(): address acquires ProtocolConfig {
+        let config = borrow_global<ProtocolConfig>(@mock_clo);
+        let vault_signer = account::create_signer_with_capability(&config.vault_signer_cap);
+        signer::address_of(&vault_signer)
+    }
+
+    #[test_only]
+    public fun init_module_for_test(admin: &signer) {
+        init_module(admin);
     }
 } 

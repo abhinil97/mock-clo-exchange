@@ -35,7 +35,7 @@ const assets = {
         decimals: 6,
         underlying_token_addr: "0xbae207659db88bea0cbead6da0ed00aac12edcdda169e591cd41c94180b46f3b",
         price: 300000, // 0.3 USDC per share
-        max_supply: 1000_000_000_000,
+        max_supply: 300_000_000_000,
         icon: "https://drive.google.com/file/d/1-ZkUZUji7ynL3AJa4rukP8SarbPZVI-N/view?usp=sharing"
     },
 }

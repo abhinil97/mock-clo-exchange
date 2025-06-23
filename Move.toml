@@ -4,7 +4,7 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-mock_clo = "0xdead"
+mock_clo = "c09d9f882bcd2a8f109d806eae6aa3e1d8f630b18a196142bf6d9b2a4292b092"
 
 [dev-addresses]
 

@@ -3,9 +3,50 @@ module mock_clo::mock_clo_exchange {
     use aptos_framework::object::{Self as object, Object};
     use aptos_framework::primary_fungible_store;
     use aptos_framework::account::{Self, SignerCapability};
+    use aptos_framework::event;
     use std::signer;
     use std::string;
     use std::option;
+
+    // ===== EVENTS =====
+    
+    #[event]
+    struct ShareClassCreated has drop, store {
+        share_class_address: address,
+        name: string::String,
+        symbol: string::String,
+        underlying_token: address,
+        initial_price_per_share: u64,
+        creator: address,
+    }
+
+    #[event]
+    struct SharesIssued has drop, store {
+        investor: address,
+        share_class: address,
+        underlying_amount: u64,
+        shares_minted: u64,
+        price_per_share: u64,
+    }
+
+    #[event]
+    struct SharesRedeemed has drop, store {
+        investor: address,
+        share_class: address,
+        shares_burned: u64,
+        underlying_returned: u64,
+        price_per_share: u64,
+    }
+
+    #[event]
+    struct PriceUpdated has drop, store {
+        share_class: address,
+        old_price: u64,
+        new_price: u64,
+        updated_by: address,
+    }
+
+    // ===== STRUCTS =====
 
     // Holds all config and capabilities for a particular shareclass
     // This resource is stored **under the address of the shareclass `Metadata` object**.
@@ -80,6 +121,8 @@ module mock_clo::mock_clo_exchange {
         let transfer_cap = fa::generate_transfer_ref(constructor_ref);
 
         let share_signer = object::generate_signer(constructor_ref);
+        let share_address = signer::address_of(&share_signer);
+        
         move_to(
             &share_signer,
             ShareClassData {
@@ -101,6 +144,16 @@ module mock_clo::mock_clo_exchange {
             vault_addr, 
             underlying_metadata,
         );
+
+        // Emit event
+        event::emit(ShareClassCreated {
+            share_class_address: share_address,
+            name: string::utf8(name),
+            symbol: string::utf8(symbol),
+            underlying_token: underlying_token_addr,
+            initial_price_per_share: price_per_share,
+            creator: admin_addr,
+        });
     }
 
     /// Investor deposits underlying asset and receives shares
@@ -126,7 +179,17 @@ module mock_clo::mock_clo_exchange {
 
         // Mint and send shares to investor
         let new_shares = fa::mint(&data.mint_cap, shares_to_mint);
-        primary_fungible_store::deposit(signer::address_of(investor), new_shares);
+        let investor_addr = signer::address_of(investor);
+        primary_fungible_store::deposit(investor_addr, new_shares);
+
+        // Emit event
+        event::emit(SharesIssued {
+            investor: investor_addr,
+            share_class: share_addr,
+            underlying_amount,
+            shares_minted: shares_to_mint,
+            price_per_share: data.price_per_share,
+        });
     }
 
     /// Investor redeems shares for underlying asset
@@ -155,7 +218,42 @@ module mock_clo::mock_clo_exchange {
             underlying_amount
         );
         
-        primary_fungible_store::deposit(signer::address_of(investor), underlying_to_return);
+        let investor_addr = signer::address_of(investor);
+        primary_fungible_store::deposit(investor_addr, underlying_to_return);
+
+        // Emit event
+        event::emit(SharesRedeemed {
+            investor: investor_addr,
+            share_class: share_addr,
+            shares_burned: share_amount,
+            underlying_returned: underlying_amount,
+            price_per_share: data.price_per_share,
+        });
+    }
+
+    /// Admin can update the price per share for any share class
+    public entry fun update_price_per_share(
+        admin: &signer,
+        share_class: Object<Metadata>,
+        new_price_per_share: u64,
+    ) acquires ProtocolConfig, ShareClassData {
+        let admin_addr = signer::address_of(admin);
+        let config = borrow_global<ProtocolConfig>(@mock_clo);
+        assert!(admin_addr == config.admin, 1); // Only admin can update price
+        assert!(new_price_per_share > 0, 4); // Price must be positive
+
+        let share_addr = object::object_address(&share_class);
+        let data = borrow_global_mut<ShareClassData>(share_addr);
+        let old_price = data.price_per_share;
+        data.price_per_share = new_price_per_share;
+
+        // Emit event
+        event::emit(PriceUpdated {
+            share_class: share_addr,
+            old_price,
+            new_price: new_price_per_share,
+            updated_by: admin_addr,
+        });
     }
 
     #[view]

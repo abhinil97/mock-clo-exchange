@@ -10,9 +10,9 @@ declare global {
       signAndSubmitTransaction: (payload: {
         function: string;
         type_arguments: string[];
-        arguments: any[];
+        arguments: unknown[];
       }) => Promise<{ hash: string }>;
-      signTransaction: (transaction: any) => Promise<any>;
+      signTransaction: (transaction: unknown) => Promise<unknown>;
     };
   }
 }

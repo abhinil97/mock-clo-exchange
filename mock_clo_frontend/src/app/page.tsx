@@ -38,7 +38,7 @@ export default function Home() {
     if (walletAddress) {
       fetchBalances();
     }
-  }, [walletAddress]);
+  }, [walletAddress]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const checkWalletConnection = async () => {
     if (window.aptos) {
@@ -90,12 +90,13 @@ export default function Home() {
         const balance = Number(aptResource.coin.value) / 100_000_000; // APT has 8 decimals
         console.log("Calculated APT Balance:", balance);
         setAptBalance(balance.toFixed(4));
-      } catch (aptError: any) {
+      } catch (aptError: unknown) {
         console.error("Error fetching APT balance:", aptError);
+        const error = aptError as { message?: string; status?: number; statusText?: string };
         console.log("APT error details:", {
-          message: aptError?.message,
-          status: aptError?.status,
-          statusText: aptError?.statusText,
+          message: error?.message,
+          status: error?.status,
+          statusText: error?.statusText,
           fullError: aptError
         });
         setAptBalance("0");

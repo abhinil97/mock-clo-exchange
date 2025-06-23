@@ -106,24 +106,25 @@ export default function Invest({ walletAddress, aptBalance, usdcBalance }: Inves
       // Show success message
       alert(`Investment successful! Transaction hash: ${pendingTransaction.hash}`);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Transaction error:", error);
+      const err = error as { code?: number; message?: string; stack?: string };
       console.error("Error details:", {
-        code: error?.code,
-        message: error?.message,
-        stack: error?.stack,
+        code: err?.code,
+        message: err?.message,
+        stack: err?.stack,
         fullError: error
       });
       
       // Handle different error types
-      if (error?.code === 4001) {
+      if (err?.code === 4001) {
         setError("Transaction rejected by user");
-      } else if (error?.code === 4100) {
+      } else if (err?.code === 4100) {
         setError("The requested method is not supported by Petra");
-      } else if (error?.message?.includes("Insufficient balance")) {
+      } else if (err?.message?.includes("Insufficient balance")) {
         setError("Insufficient balance for this transaction");
-      } else if (error?.message) {
-        setError(`Error: ${error.message}`);
+      } else if (err?.message) {
+        setError(`Error: ${err.message}`);
       } else {
         setError("Transaction failed. Please check the console for details.");
       }

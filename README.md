@@ -136,7 +136,32 @@ aptos move run --function-id <addr>::mock_clo_exchange::create_share_class \
   --args string:"Class A" string:"CLA" u8:6 address:<usdc_addr> u64:10000000 u128:0
 ```
 
+## Frontend Interface
+
+For admin operational details and user interactions, refer to the **mock_clo_frontend** project. The frontend provides a web interface for:
+- Admin operations (creating share classes, managing protocol)
+- User operations (issuance and redemption)
+- Portfolio viewing and management
+
+Please refer to the `mock_clo_frontend` README for detailed setup instructions and commands to run the frontend application.
+
+## Usefull Commands
+For compiling Upgradable contracts (Refer `UPGRADE_GUIDE.md`)
+
+Compile: ` aptos move compile --save-metadata `
+
+Deploy: ` aptos move publish --profile lucid --upgrade-policy compatible`
+
+To Run scripts, keep 1 script in a source folder
+
+Compile: `aptos move compile-script`
+
+Run: `aptos move run-script --compiled-script-path script.mv --profile lucid`
+
+
 
 ## License
 
 MIT License
+
+

@@ -4,42 +4,42 @@ import { useState, useEffect } from "react";
 import { useAptos } from "../providers/AptosProvider";
 import { AptosService } from "../services/aptosService";
 import { CalculationService } from "../services/calculationService";
-import { MODULE_ADDRESS, USDC_METADATA, SHARE_CLASSES } from "../constants/addresses";
-import { WalletProps, Currency, InputMode } from "../types/common";
+import { MODULE_ADDRESS, USDC_METADATA, SHARE_CLASSES, ADMIN_ADDRESS } from "../constants/addresses";
+import { WalletProps, InputMode } from "../types/common";
 
-// Window interface for Petra wallet is defined in page.tsx
-
-export default function Invest({ walletAddress, aptBalance, usdcBalance }: WalletProps) {
+export default function UpdatePrice({ walletAddress, aptBalance, usdcBalance }: WalletProps) {
   const [shareClassId, setShareClassId] = useState("");
-  const [investmentAmount, setInvestmentAmount] = useState("");
-  const [selectedCurrency, setSelectedCurrency] = useState<Currency>("USDC");
+  const [newPrice, setNewPrice] = useState("");
+  const [inputMode, setInputMode] = useState<InputMode>("select");
   const [isLoading, setIsLoading] = useState(false);
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [inputMode, setInputMode] = useState<InputMode>("select");
-  const [exchangePrice, setExchangePrice] = useState<string | null>(null);
+  const [currentPrice, setCurrentPrice] = useState<string | null>(null);
   const [isLoadingPrice, setIsLoadingPrice] = useState(false);
 
   const { aptos } = useAptos();
   const aptosService = new AptosService(aptos);
 
-  // Fetch exchange price when shareClassId changes
+  // Check if connected wallet is admin
+  const isAdmin = walletAddress?.toLowerCase() === ADMIN_ADDRESS.toLowerCase();
+
+  // Fetch current price when shareClassId changes
   useEffect(() => {
     const fetchPrice = async () => {
       if (shareClassId) {
         setIsLoadingPrice(true);
         const price = await aptosService.fetchExchangePrice(shareClassId);
-        setExchangePrice(price);
+        setCurrentPrice(price);
         setIsLoadingPrice(false);
       } else {
-        setExchangePrice(null);
+        setCurrentPrice(null);
       }
     };
 
     fetchPrice();
   }, [shareClassId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleInvest = async () => {
+  const handleUpdatePrice = async () => {
     setIsLoading(true);
     setError(null);
     setTransactionHash(null);
@@ -51,22 +51,27 @@ export default function Invest({ walletAddress, aptBalance, usdcBalance }: Walle
         throw new Error(addressError);
       }
 
-      const maxAmount = getMaxAmount();
-      const amountError = CalculationService.validateInvestmentAmount(investmentAmount, maxAmount);
-      if (amountError) {
-        throw new Error(amountError);
+      if (!newPrice || Number(newPrice) <= 0) {
+        throw new Error("Please enter a valid price greater than 0");
+      }
+
+      if (!isAdmin) {
+        throw new Error("Only admin can update prices");
       }
 
       // Submit transaction
-      const txHash = await aptosService.submitInvestment(shareClassId, investmentAmount);
+      const txHash = await aptosService.submitPriceUpdate(shareClassId, newPrice);
       setTransactionHash(txHash);
       
       // Reset form on success
-      setInvestmentAmount("");
-      setShareClassId("");
+      setNewPrice("");
+      
+      // Refresh current price
+      const updatedPrice = await aptosService.fetchExchangePrice(shareClassId);
+      setCurrentPrice(updatedPrice);
       
       // Show success message
-      alert(`Investment successful! Transaction hash: ${txHash}`);
+      alert(`Price update successful! Transaction hash: ${txHash}`);
       
     } catch (error: unknown) {
       const errorMessage = AptosService.handleTransactionError(error);
@@ -74,19 +79,6 @@ export default function Invest({ walletAddress, aptBalance, usdcBalance }: Walle
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const getMaxAmount = () => {
-    return selectedCurrency === "APT" ? aptBalance : usdcBalance;
-  };
-
-  const getEstimatedShares = () => {
-    return CalculationService.getEstimatedShares(investmentAmount, exchangePrice || "0");
-  };
-
-  const getInlineEstimate = () => {
-    if (!investmentAmount || !exchangePrice || shareClassId === USDC_METADATA) return null;
-    return CalculationService.getInlineConversionEstimate(investmentAmount, exchangePrice, "toShares");
   };
 
   const getShareClassName = (address: string) => {
@@ -99,6 +91,39 @@ export default function Invest({ walletAddress, aptBalance, usdcBalance }: Walle
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-md">
+      {/* Admin Status Banner */}
+      <div className={`p-4 rounded-md border ${
+        isAdmin 
+          ? "bg-green-50 border-green-200" 
+          : "bg-red-50 border-red-200"
+      }`}>
+        <div className="flex items-center gap-2">
+          {isAdmin ? (
+            <>
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm font-medium text-green-800">
+                ✅ Admin Access Granted
+              </span>
+            </>
+          ) : (
+            <>
+              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              <span className="text-sm font-medium text-red-800">
+                ⚠️ Admin Access Required
+              </span>
+            </>
+          )}
+        </div>
+        <p className="text-xs mt-1 text-gray-600">
+          Admin Address: <span className="font-mono">{CalculationService.formatAddress(ADMIN_ADDRESS)}</span>
+        </p>
+        {walletAddress && (
+          <p className="text-xs text-gray-600">
+            Your Address: <span className="font-mono">{CalculationService.formatAddress(walletAddress)}</span>
+          </p>
+        )}
+      </div>
+
       <div className="flex flex-col gap-2">
         <div className="flex justify-between items-center mb-2">
           <label className="text-sm font-medium">
@@ -149,24 +174,19 @@ export default function Invest({ walletAddress, aptBalance, usdcBalance }: Walle
                   </option>
                 ))}
               </optgroup>
-              <optgroup label="Assets">
-                <option value={USDC_METADATA}>USDC</option>
-              </optgroup>
             </select>
             {shareClassId && (
               <div className="text-xs text-gray-500 space-y-1">
                 <p className="font-mono">
                   {formatAddress(shareClassId)}
                 </p>
-                {shareClassId !== USDC_METADATA && (
-                  <div className="flex justify-between items-center">
-                    <span>Exchange Rate:</span>
-                    <span className="font-semibold">
-                      {isLoadingPrice ? "Loading..." : 
-                       exchangePrice ? `${exchangePrice} USDC per share` : "N/A"}
-                    </span>
-                  </div>
-                )}
+                <div className="flex justify-between items-center">
+                  <span>Current Price:</span>
+                  <span className="font-semibold">
+                    {isLoadingPrice ? "Loading..." : 
+                     currentPrice ? `${currentPrice} USDC per share` : "N/A"}
+                  </span>
+                </div>
               </div>
             )}
           </>
@@ -183,24 +203,16 @@ export default function Invest({ walletAddress, aptBalance, usdcBalance }: Walle
             />
             <div className="flex justify-between items-center">
               <p className="text-xs text-gray-500">
-                Enter share class or fungible asset address
+                Enter share class fungible asset address
               </p>
-              <button
-                type="button"
-                onClick={() => setShareClassId(USDC_METADATA)}
-                className="text-xs text-blue-600 hover:text-blue-700"
-                disabled={isLoading}
-              >
-                Use USDC
-              </button>
             </div>
-            {shareClassId && shareClassId !== USDC_METADATA && (
+            {shareClassId && (
               <div className="text-xs text-gray-500 space-y-1">
                 <div className="flex justify-between items-center">
-                  <span>Exchange Rate:</span>
+                  <span>Current Price:</span>
                   <span className="font-semibold">
                     {isLoadingPrice ? "Loading..." : 
-                     exchangePrice ? `${exchangePrice} USDC per share` : "N/A"}
+                     currentPrice ? `${currentPrice} USDC per share` : "N/A"}
                   </span>
                 </div>
               </div>
@@ -210,72 +222,57 @@ export default function Invest({ walletAddress, aptBalance, usdcBalance }: Walle
       </div>
 
       <div className="flex flex-col gap-2">
-        <label htmlFor="currency" className="text-sm font-medium">
-          Select Currency
-        </label>
-        <select
-          id="currency"
-          value={selectedCurrency}
-          onChange={(e) => setSelectedCurrency(e.target.value as Currency)}
-          className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          disabled={isLoading}
-        >
-          <option value="USDC">USDC</option>
-          <option value="APT" disabled>APT (Coming Soon)</option>
-        </select>
-        <div className="text-xs text-gray-500">
-          Available: {getMaxAmount()} {selectedCurrency}
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label htmlFor="investmentAmount" className="text-sm font-medium">
-          Investment Amount
+        <label htmlFor="newPrice" className="text-sm font-medium">
+          New Price (USDC per share)
         </label>
         <input
-          id="investmentAmount"
+          id="newPrice"
           type="number"
-          step={selectedCurrency === "APT" ? "0.0001" : "0.01"}
-          value={investmentAmount}
-          onChange={(e) => setInvestmentAmount(e.target.value)}
+          step="0.01"
+          value={newPrice}
+          onChange={(e) => setNewPrice(e.target.value)}
           className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder={`Amount in ${selectedCurrency}`}
-          disabled={isLoading}
+          placeholder="Enter new price..."
+          disabled={isLoading || !isAdmin}
         />
-        <div className="flex justify-between items-center">
-          <button
-            type="button"
-            onClick={() => setInvestmentAmount(getMaxAmount())}
-            className="text-xs text-blue-600 hover:text-blue-700"
-            disabled={isLoading}
-          >
-            Use Max
-          </button>
-          {getInlineEstimate() && (
-            <div className="text-xs text-gray-600">
-              ≈ {getInlineEstimate()} shares
-            </div>
-          )}
-        </div>
+        {currentPrice && newPrice && (
+          <div className="text-xs text-gray-600">
+            Change: {currentPrice} → {newPrice} USDC per share
+            {Number(newPrice) > Number(currentPrice) ? (
+              <span className="text-green-600 ml-1">↗ +{(Number(newPrice) - Number(currentPrice)).toFixed(2)}</span>
+            ) : Number(newPrice) < Number(currentPrice) ? (
+              <span className="text-red-600 ml-1">↘ -{(Number(currentPrice) - Number(newPrice)).toFixed(2)}</span>
+            ) : (
+              <span className="text-gray-600 ml-1">→ No change</span>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Conversion Preview */}
-      {exchangePrice && shareClassId !== USDC_METADATA && investmentAmount && (
-        <div className="bg-blue-50 border border-blue-200 p-3 rounded-md">
-          <h4 className="text-sm font-medium mb-2 text-blue-800">Conversion Preview</h4>
-          <div className="space-y-1 text-sm text-blue-700">
+      {/* Price Update Preview */}
+      {shareClassId && newPrice && currentPrice && (
+        <div className="bg-purple-50 border border-purple-200 p-3 rounded-md">
+          <h4 className="text-sm font-medium mb-2 text-purple-800">Price Update Preview</h4>
+          <div className="space-y-1 text-sm text-purple-700">
             <div className="flex justify-between">
-              <span>Investment:</span>
-              <span>{investmentAmount} USDC</span>
+              <span>Share Class:</span>
+              <span>{getShareClassName(shareClassId)}</span>
             </div>
             <div className="flex justify-between">
-              <span>Rate:</span>
-              <span>{exchangePrice} USDC per share</span>
+              <span>Current Price:</span>
+              <span>{currentPrice} USDC</span>
             </div>
-            <div className="border-t border-blue-300 pt-1 mt-1">
+            <div className="flex justify-between">
+              <span>New Price:</span>
+              <span>{newPrice} USDC</span>
+            </div>
+            <div className="border-t border-purple-300 pt-1 mt-1">
               <div className="flex justify-between font-medium">
-                <span>You'll receive:</span>
-                <span>{getEstimatedShares()} shares</span>
+                <span>Change:</span>
+                <span>
+                  {Number(newPrice) > Number(currentPrice) ? "+" : ""}
+                  {(Number(newPrice) - Number(currentPrice)).toFixed(2)} USDC
+                </span>
               </div>
             </div>
           </div>
@@ -287,7 +284,7 @@ export default function Invest({ walletAddress, aptBalance, usdcBalance }: Walle
         <div className="space-y-1 text-sm">
           <div className="flex justify-between">
             <span className="text-gray-600">Function:</span>
-            <span className="font-mono text-xs">request_issuance</span>
+            <span className="font-mono text-xs">update_price_per_share</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Target:</span>
@@ -296,8 +293,8 @@ export default function Invest({ walletAddress, aptBalance, usdcBalance }: Walle
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Amount:</span>
-            <span>{investmentAmount || "0"} {selectedCurrency}</span>
+            <span className="text-gray-600">New Price:</span>
+            <span>{newPrice || "0"} USDC</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Module:</span>
@@ -308,6 +305,15 @@ export default function Invest({ walletAddress, aptBalance, usdcBalance }: Walle
         </div>
       </div>
 
+      {!isAdmin && (
+        <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-md">
+          <p className="text-xs text-yellow-800">
+            <strong>Access Denied:</strong> Only the admin address can update share class prices. 
+            Please connect with the admin wallet to proceed.
+          </p>
+        </div>
+      )}
+
       {error && (
         <div className="bg-red-50 border border-red-200 p-3 rounded-md">
           <p className="text-sm text-red-800">{error}</p>
@@ -317,7 +323,7 @@ export default function Invest({ walletAddress, aptBalance, usdcBalance }: Walle
       {transactionHash && (
         <div className="bg-green-50 border border-green-200 p-3 rounded-md">
           <p className="text-sm text-green-800">
-            Transaction submitted! Hash: 
+            Price update submitted! Hash: 
             <span className="font-mono text-xs ml-1">
               {CalculationService.formatAddress(transactionHash, 10, 8)}
             </span>
@@ -326,11 +332,13 @@ export default function Invest({ walletAddress, aptBalance, usdcBalance }: Walle
       )}
 
       <button
-        onClick={handleInvest}
-        disabled={!walletAddress || !shareClassId || !investmentAmount || Number(investmentAmount) <= 0 || isLoading}
-        className="px-6 py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        onClick={handleUpdatePrice}
+        disabled={!walletAddress || !shareClassId || !newPrice || Number(newPrice) <= 0 || isLoading || !isAdmin}
+        className="px-6 py-3 bg-purple-600 text-white font-medium rounded-md hover:bg-purple-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {!walletAddress ? "Connect Wallet First" : isLoading ? "Processing..." : "Submit Investment"}
+        {!walletAddress ? "Connect Wallet First" : 
+         !isAdmin ? "Admin Access Required" :
+         isLoading ? "Processing..." : "Update Price"}
       </button>
     </div>
   );

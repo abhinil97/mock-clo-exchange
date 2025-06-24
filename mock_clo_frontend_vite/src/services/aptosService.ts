@@ -118,7 +118,7 @@ export class AptosService {
     const nameBytes = Array.from(new TextEncoder().encode(name));
     const symbolBytes = Array.from(new TextEncoder().encode(symbol));
     // Convert user-friendly price to contract's internal representation (multiply by 1000)
-    const priceInContractFormat = Math.floor(Number(pricePerShare) * 1000);
+    const priceInContractFormat = Math.floor(Number(pricePerShare));
     const maxSupplyU128 = maxSupply === "0" ? "0" : Math.floor(Number(maxSupply)).toString();
 
     console.log("Create share class parameters:", {
@@ -139,7 +139,7 @@ export class AptosService {
         symbolBytes, // vector<u8> symbol
         decimals.toString(), // u8 decimals
         underlyingTokenAddr, // address underlying_token_addr
-        priceInContractFormat.toString(), // u64 price_per_share (with 1000 factor)
+        priceInContractFormat.toString(), // u64 price_per_share 
         maxSupplyU128 // u128 max_supply
       ]
     };
@@ -253,8 +253,8 @@ export class AptosService {
     await this.validateNetwork();
 
     // Convert user-friendly price to contract's internal representation (multiply by 1000)
-    const priceInContractFormat = Math.floor(Number(newPrice) * 1000);
-    console.log("New price in contract format:", priceInContractFormat, "(user input:", newPrice, "* 1000)");
+    const priceInContractFormat = Math.floor(Number(newPrice));
+    console.log("New price in contract format:", priceInContractFormat, "(user input:", newPrice);
 
     // Build the transaction payload for Petra
     const payload: TransactionPayload = {
@@ -262,7 +262,7 @@ export class AptosService {
       type_arguments: [],
       arguments: [
         shareClassId, // The fungible asset metadata object address
-        priceInContractFormat.toString() // u64 new price with 1000 factor
+        priceInContractFormat.toString() // u64 new price 
       ]
     };
 

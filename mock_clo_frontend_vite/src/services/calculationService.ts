@@ -13,7 +13,7 @@ export class CalculationService {
     
     // Convert to share units: (amount_in_usdc / price_per_share) * 1000
     // But since shares have 6 decimals, we need to account for that in display
-    const shareUnits = (amount / price) * 1000;
+    const shareUnits = (amount / price) * 1000000;
     // Convert to displayable share tokens (divide by 10^6 for 6 decimals)
     const shareTokens = shareUnits / Math.pow(10, 6);
     return shareTokens.toFixed(6);
@@ -31,7 +31,7 @@ export class CalculationService {
     // Convert share tokens to share units (multiply by 10^6 for 6 decimals)
     const shareUnits = shareTokens * Math.pow(10, 6);
     // Calculate underlying: (share_units * price_per_share) / 1000
-    const underlyingAmount = (shareUnits * price) / 1000;
+    const underlyingAmount = (shareUnits * price) / 1000000 ;
     // Convert to USDC (divide by 10^6 for 6 decimals)
     const usdcAmount = underlyingAmount / Math.pow(10, 6);
     return usdcAmount.toFixed(6);
@@ -55,7 +55,7 @@ export class CalculationService {
     // Convert share tokens to share units (multiply by 10^6 for 6 decimals)
     const shareUnits = shareTokens * Math.pow(10, 6);
     // Calculate underlying: (share_units * price_per_share) / 1000
-    const underlyingAmount = (shareUnits * price) / 1000;
+    const underlyingAmount = (shareUnits * price)  ;
     // Convert to USDC (divide by 10^6 for 6 decimals)
     const usdcAmount = underlyingAmount / Math.pow(10, 6);
     return usdcAmount.toFixed(6);
@@ -150,13 +150,13 @@ export class CalculationService {
     
     if (direction === "toShares") {
       // Convert USDC to share tokens: (amount_in_usdc / price_per_share) * 1000 / 10^6
-      const shareUnits = (amountNum / price) * 1000;
+      const shareUnits = (amountNum / price) * 1000000;
       const shareTokens = shareUnits / Math.pow(10, 6);
       return shareTokens.toFixed(6);
     } else {
       // Convert share tokens to USDC: (share_tokens * 10^6 * price_per_share) / 1000 / 10^6
       const shareUnits = amountNum * Math.pow(10, 6);
-      const underlyingAmount = (shareUnits * price) / 1000;
+      const underlyingAmount = (shareUnits * price) ;
       const usdcAmount = underlyingAmount / Math.pow(10, 6);
       return usdcAmount.toFixed(6);
     }

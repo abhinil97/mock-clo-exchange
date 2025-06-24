@@ -231,9 +231,14 @@ export default function CreateShareClass({ walletAddress }: WalletProps) {
           placeholder="e.g. 5 = 0.005 "
           disabled={isLoading}
         />
-        <p className="text-xs text-gray-500">
-          5 means 1 usdc will give (1/5) x 1000 units of share class
+        <div>
+        <p className="text-xs text-gray-500 my-0, py-0">
+          Price = 5 means 1 usdc will give (1/5) x 1000 = 200 units of share class
         </p>
+        <p className="text-xs text-gray-500">
+          Price = 50 means 1 usdc will give (1/50) x 1000 = 20 units of share class
+        </p>
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">

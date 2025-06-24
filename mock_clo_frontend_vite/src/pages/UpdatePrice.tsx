@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { useAptos } from "../providers/AptosProvider";
 import { AptosService } from "../services/aptosService";
 import { CalculationService } from "../services/calculationService";
-import { MODULE_ADDRESS, USDC_METADATA, SHARE_CLASSES, ADMIN_ADDRESS } from "../constants/addresses";
+import { MODULE_ADDRESS, SHARE_CLASSES, ADMIN_ADDRESS } from "../constants/addresses";
 import { WalletProps, InputMode } from "../types/common";
 
-export default function UpdatePrice({ walletAddress, aptBalance, usdcBalance }: WalletProps) {
+export default function UpdatePrice({ walletAddress }: WalletProps) {
   const [shareClassId, setShareClassId] = useState("");
   const [newPrice, setNewPrice] = useState("");
   const [inputMode, setInputMode] = useState<InputMode>("select");

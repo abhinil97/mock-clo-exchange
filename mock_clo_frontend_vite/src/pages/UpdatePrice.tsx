@@ -226,20 +226,23 @@ export default function UpdatePrice({ walletAddress }: WalletProps) {
         <input
           id="newPrice"
           type="number"
-          step="0.01"
+          step="0.001"
           value={newPrice}
           onChange={(e) => setNewPrice(e.target.value)}
           className="px-4 py-2 border border-gray-300 rounded-md bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="Enter new price..."
           disabled={isLoading || !isAdmin}
         />
+        <div className="text-xs text-gray-500">
+          <p>🔧 System uses 1000x internal multiplier for granular pricing</p>
+        </div>
         {currentPrice && newPrice && (
           <div className="text-xs text-gray-600">
             Change: {currentPrice} → {newPrice} USDC per share
             {Number(newPrice) > Number(currentPrice) ? (
-              <span className="text-green-600 ml-1">↗ +{(Number(newPrice) - Number(currentPrice)).toFixed(2)}</span>
+              <span className="text-green-600 ml-1">↗ +{(Number(newPrice) - Number(currentPrice)).toFixed(3)}</span>
             ) : Number(newPrice) < Number(currentPrice) ? (
-              <span className="text-red-600 ml-1">↘ -{(Number(currentPrice) - Number(newPrice)).toFixed(2)}</span>
+              <span className="text-red-600 ml-1">↘ -{(Number(currentPrice) - Number(newPrice)).toFixed(3)}</span>
             ) : (
               <span className="text-gray-600 ml-1">→ No change</span>
             )}
@@ -269,7 +272,7 @@ export default function UpdatePrice({ walletAddress }: WalletProps) {
                 <span>Change:</span>
                 <span>
                   {Number(newPrice) > Number(currentPrice) ? "+" : ""}
-                  {(Number(newPrice) - Number(currentPrice)).toFixed(2)} USDC
+                  {(Number(newPrice) - Number(currentPrice)).toFixed(3)} USDC
                 </span>
               </div>
             </div>

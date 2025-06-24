@@ -166,7 +166,7 @@ module mock_clo::mock_clo_exchange {
         let data = borrow_global_mut<ShareClassData>(share_addr);
 
         assert!(underlying_amount % data.price_per_share == 0, 0);
-        let shares_to_mint = underlying_amount / data.price_per_share;
+        let shares_to_mint = (underlying_amount / data.price_per_share) * 1000;
 
         let underlying_meta = object::address_to_object<Metadata>(data.underlying_metadata);
         let underlying_fa = primary_fungible_store::withdraw(investor, underlying_meta, underlying_amount);
@@ -201,7 +201,7 @@ module mock_clo::mock_clo_exchange {
         let share_addr = object::object_address(&share_class);
         let data = borrow_global_mut<ShareClassData>(share_addr);
 
-        let underlying_amount: u64 = share_amount * data.price_per_share;
+        let underlying_amount: u64 = (share_amount * data.price_per_share) / 1000;
 
         // Burn investor's shares
         let shares_fa = primary_fungible_store::withdraw(investor, share_class, share_amount);

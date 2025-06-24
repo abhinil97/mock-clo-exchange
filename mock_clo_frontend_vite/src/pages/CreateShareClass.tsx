@@ -212,15 +212,15 @@ export default function CreateShareClass({ walletAddress }: WalletProps) {
         <input
           id="pricePerShare"
           type="number"
-          step="0.01"
+          step="0.001"
           value={pricePerShare}
           onChange={(e) => setPricePerShare(e.target.value)}
           className="px-4 py-2 border border-gray-300 rounded-md bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="e.g., 1.00"
+          placeholder="e.g. 5 = 0.005 "
           disabled={isLoading}
         />
         <p className="text-xs text-gray-500">
-          Initial price for 1 share in underlying token units
+          5 means 1 usdc will give (1/5) x 1000 units of share class
         </p>
       </div>
 

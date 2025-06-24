@@ -169,20 +169,22 @@ module mock_clo::mock_clo_exchange_test {
 
     #[test(admin = @mock_clo, investor = @0x2)]
     fun test_issuance_and_redemption(admin: signer, investor: signer) acquires USDCInfo {
-        let underlying_amount_total = 100_000_000u64;
-        let price_per_share = 10_000_000u64; // 10 underlying units (with 6 decimals) per share
+        let underlying_amount_total = 100_000_000u64; // 100 USDC (with 6 decimals)
+        let price_per_share = 5u64; // 5 USDC per share (simple value)
         let (underlying_obj, share_obj, underlying_amount_total) = setup(&admin, &investor, underlying_amount_total, price_per_share, 1);
         
         // Get vault address for balance checks
         let vault_addr = mock_clo_exchange::get_vault_address();
         
-        // 3. Investor requests issuance for 20_000_000 underlying (should mint 2 shares)
-        let issuance_amount = 20_000_000u64;
+        // Investor requests issuance for 10_000_000 underlying (10 USDC)
+        // With 1000 conversion: (10_000_000 / 5) * 1000 = 2_000_000_000 share units
+        // But shares have 6 decimals, so this is 2000 share tokens (2000 * 10^6 units)
+        let issuance_amount = 10_000_000u64;
         mock_clo_exchange::request_issuance(&investor, share_obj, issuance_amount);
 
-        // Check balances
+        // Check balances - should have 2_000_000_000 share units (2000 * 10^6)
         let share_balance = primary_fungible_store::balance(signer::address_of(&investor), share_obj);
-        assert!(share_balance == 2, E_INCORRECT_SHARE_BALANCE);
+        assert!(share_balance == 2_000_000_000, E_INCORRECT_SHARE_BALANCE);
         
         let underlying_balance_after_issuance = primary_fungible_store::balance(signer::address_of(&investor), underlying_obj);
         assert!(underlying_balance_after_issuance == underlying_amount_total - issuance_amount, E_INCORRECT_UNDERLYING_BALANCE);
@@ -191,39 +193,40 @@ module mock_clo::mock_clo_exchange_test {
         let vault_balance = primary_fungible_store::balance(vault_addr, underlying_obj);
         assert!(vault_balance == issuance_amount, E_INCORRECT_VAULT_BALANCE);
 
-        //4. Investor redeems 1 share -> should receive 10_000_000 underlying back
-        mock_clo_exchange::request_redemption(&investor, share_obj, 1);
+        // Investor redeems 1_000_000_000 share units (equivalent to 1000 share tokens)
+        // Should receive: (1_000_000_000 * 5) / 1000 = 5_000_000 underlying (5 USDC)
+        mock_clo_exchange::request_redemption(&investor, share_obj, 1_000_000_000);
         
         let share_balance_after_redemption = primary_fungible_store::balance(signer::address_of(&investor), share_obj);
-        assert!(share_balance_after_redemption == 1, E_INCORRECT_SHARE_BALANCE_AFTER_REDEMPTION);
+        assert!(share_balance_after_redemption == 1_000_000_000, E_INCORRECT_SHARE_BALANCE_AFTER_REDEMPTION);
         
         let underlying_balance_after_redemption = primary_fungible_store::balance(signer::address_of(&investor), underlying_obj);
-        assert!(underlying_balance_after_redemption == underlying_amount_total - issuance_amount + price_per_share, E_INCORRECT_UNDERLYING_BALANCE_AFTER_REDEMPTION);
+        assert!(underlying_balance_after_redemption == underlying_amount_total - issuance_amount + 5_000_000, E_INCORRECT_UNDERLYING_BALANCE_AFTER_REDEMPTION);
         
         // Check vault balance decreased
         let vault_balance_after_redemption = primary_fungible_store::balance(vault_addr, underlying_obj);
-        assert!(vault_balance_after_redemption == issuance_amount - price_per_share, E_INCORRECT_VAULT_BALANCE);
+        assert!(vault_balance_after_redemption == issuance_amount - 5_000_000, E_INCORRECT_VAULT_BALANCE);
     }
     
     #[test(admin = @mock_clo, investor = @0x2)]
     fun test_multiple_issuances(admin: signer, investor: signer) acquires USDCInfo {
-        let underlying_amount_total = 100_000_000u64;
-        let price_per_share = 10_000_000u64;
+        let underlying_amount_total = 100_000_000u64; // 100 USDC (with 6 decimals)
+        let price_per_share = 5u64; // 5 USDC per share (simple value)
         let (underlying_obj, share_obj, _) = setup(&admin, &investor, underlying_amount_total, price_per_share, 2);
         
-        // First issuance - 1 share
+        // First issuance - 10 USDC -> 2_000_000_000 share units (2000 * 10^6)
         let issuance_amount_1 = 10_000_000u64;
         mock_clo_exchange::request_issuance(&investor, share_obj, issuance_amount_1);
         
         let share_balance = primary_fungible_store::balance(signer::address_of(&investor), share_obj);
-        assert!(share_balance == 1, E_INCORRECT_SHARE_BALANCE);
+        assert!(share_balance == 2_000_000_000, E_INCORRECT_SHARE_BALANCE);
         
-        // Second issuance - 2 more shares
-        let issuance_amount_2 = 20_000_000u64;
+        // Second issuance - 5 USDC -> 1_000_000_000 more share units (total 3_000_000_000)
+        let issuance_amount_2 = 5_000_000u64;
         mock_clo_exchange::request_issuance(&investor, share_obj, issuance_amount_2);
         
         let share_balance = primary_fungible_store::balance(signer::address_of(&investor), share_obj);
-        assert!(share_balance == 3, E_INCORRECT_SHARE_BALANCE);
+        assert!(share_balance == 3_000_000_000, E_INCORRECT_SHARE_BALANCE);
         
         let underlying_balance = primary_fungible_store::balance(signer::address_of(&investor), underlying_obj);
         assert!(underlying_balance == underlying_amount_total - issuance_amount_1 - issuance_amount_2, E_INCORRECT_UNDERLYING_BALANCE);
@@ -231,19 +234,19 @@ module mock_clo::mock_clo_exchange_test {
     
     #[test(admin = @mock_clo, investor = @0x2)]
     fun test_full_redemption(admin: signer, investor: signer) acquires USDCInfo {
-        let underlying_amount_total = 50_000_000u64;
-        let price_per_share = 10_000_000u64;
+        let underlying_amount_total = 50_000_000u64; // 50 USDC (with 6 decimals)
+        let price_per_share = 5u64; // 5 USDC per share (simple value)
         let (underlying_obj, share_obj, _) = setup(&admin, &investor, underlying_amount_total, price_per_share, 3);
         
-        // Issue 5 shares
+        // Issue 50 USDC -> 10_000_000_000 share units (10000 * 10^6)
         let issuance_amount = 50_000_000u64;
         mock_clo_exchange::request_issuance(&investor, share_obj, issuance_amount);
         
         let share_balance = primary_fungible_store::balance(signer::address_of(&investor), share_obj);
-        assert!(share_balance == 5, E_INCORRECT_SHARE_BALANCE);
+        assert!(share_balance == 10_000_000_000, E_INCORRECT_SHARE_BALANCE);
         
-        // Redeem all 5 shares
-        mock_clo_exchange::request_redemption(&investor, share_obj, 5);
+        // Redeem all 10_000_000_000 share units
+        mock_clo_exchange::request_redemption(&investor, share_obj, 10_000_000_000);
         
         let share_balance_after = primary_fungible_store::balance(signer::address_of(&investor), share_obj);
         assert!(share_balance_after == 0, E_INCORRECT_SHARE_BALANCE_AFTER_REDEMPTION);
@@ -254,8 +257,8 @@ module mock_clo::mock_clo_exchange_test {
     
     #[test(admin = @mock_clo, investor1 = @0x2, investor2 = @0x3)]
     fun test_multiple_investors(admin: signer, investor1: signer, investor2: signer) acquires USDCInfo {
-        let underlying_amount = 100_000_000u64;
-        let price_per_share = 10_000_000u64;
+        let underlying_amount = 100_000_000u64; // 100 USDC (with 6 decimals)
+        let price_per_share = 5u64; // 5 USDC per share (simple value)
         
         // Setup for investor1 (this creates USDC and the share class)
         let (_, share_obj, _) = setup(&admin, &investor1, underlying_amount, price_per_share, 4);
@@ -264,24 +267,26 @@ module mock_clo::mock_clo_exchange_test {
         let investor2_addr = signer::address_of(&investor2);
         mint_usdc_to(&admin, underlying_amount, investor2_addr);
         
-        // Investor1 issues 3 shares
-        mock_clo_exchange::request_issuance(&investor1, share_obj, 30_000_000u64);
+        // Investor1 issues 15 USDC -> 3_000_000_000 share units (3000 * 10^6)
+        mock_clo_exchange::request_issuance(&investor1, share_obj, 15_000_000u64);
         let share_balance1 = primary_fungible_store::balance(signer::address_of(&investor1), share_obj);
-        assert!(share_balance1 == 3, E_INCORRECT_SHARE_BALANCE);
+        assert!(share_balance1 == 3_000_000_000, E_INCORRECT_SHARE_BALANCE);
         
-        // Investor2 issues 2 shares
-        mock_clo_exchange::request_issuance(&investor2, share_obj, 20_000_000u64);
+        // Investor2 issues 10 USDC -> 2_000_000_000 share units (2000 * 10^6)
+        mock_clo_exchange::request_issuance(&investor2, share_obj, 10_000_000u64);
         let share_balance2 = primary_fungible_store::balance(investor2_addr, share_obj);
-        assert!(share_balance2 == 2, E_INCORRECT_SHARE_BALANCE);
+        assert!(share_balance2 == 2_000_000_000, E_INCORRECT_SHARE_BALANCE);
         
         // Both investors redeem shares
-        mock_clo_exchange::request_redemption(&investor1, share_obj, 1);
-        mock_clo_exchange::request_redemption(&investor2, share_obj, 2);
+        // Investor1 redeems 1_000_000_000 share units (equivalent to 1000 shares = 5 USDC)
+        mock_clo_exchange::request_redemption(&investor1, share_obj, 1_000_000_000);
+        // Investor2 redeems all 2_000_000_000 share units (equivalent to 2000 shares = 10 USDC)
+        mock_clo_exchange::request_redemption(&investor2, share_obj, 2_000_000_000);
         
         // Check final balances
         let final_share_balance1 = primary_fungible_store::balance(signer::address_of(&investor1), share_obj);
         let final_share_balance2 = primary_fungible_store::balance(investor2_addr, share_obj);
-        assert!(final_share_balance1 == 2, E_INCORRECT_SHARE_BALANCE_AFTER_REDEMPTION);
+        assert!(final_share_balance1 == 2_000_000_000, E_INCORRECT_SHARE_BALANCE_AFTER_REDEMPTION);
         assert!(final_share_balance2 == 0, E_INCORRECT_SHARE_BALANCE_AFTER_REDEMPTION);
     }
 } 

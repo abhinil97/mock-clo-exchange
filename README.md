@@ -81,6 +81,29 @@ sequenceDiagram
     Note over Investor,ShareClass: Investor exchanges shares for underlying
 ```
 
+## Conversion Mechanism
+
+The protocol uses a **1000 bips conversion factor** for share calculations:
+
+### Issuance Formula
+```
+shares_minted = (underlying_amount / price_per_share) * 1000
+```
+
+**Example**: If price is set to 5 USDC per share:
+- Depositing 1 USDC (1,000,000 micro-USDC) 
+- User receives: (1,000,000 / 5,000,000) * 1000 = 200 share units
+
+### Redemption Formula  
+```
+underlying_returned = (share_amount * price_per_share) / 1000
+```
+
+**Example**: Redeeming 200 share units at 5 USDC per share:
+- User receives: (200,000,000 * 5) / 1000 = 1,000,000 micro-USDC (1 USDC)
+
+*Note: Both underlying assets and shares use 6 decimal precision*
+
 ## Usage Examples
 
 ### Creating a Share Class

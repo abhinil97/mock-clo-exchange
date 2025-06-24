@@ -23,8 +23,11 @@ export class AptosService {
 
       // Result should be a u64 representing underlying units per share
       const pricePerShare = Number(result[0]);
-      // Keep the raw price without conversion (as per user's changes)
-      return pricePerShare.toFixed(2);
+      // Convert from contract's internal representation (with 1000 factor) to user-friendly display
+      // Contract stores: price_per_share * 1000 for granularity
+      // Display: actual USDC price per share
+      const displayPrice = pricePerShare / 1000;
+      return displayPrice.toFixed(3);
     } catch (error) {
       console.error("Error fetching exchange price:", error);
       return null;
@@ -114,7 +117,8 @@ export class AptosService {
     // Convert inputs to proper types
     const nameBytes = Array.from(new TextEncoder().encode(name));
     const symbolBytes = Array.from(new TextEncoder().encode(symbol));
-    const priceInSmallestUnit = Math.floor(Number(pricePerShare));
+    // Convert user-friendly price to contract's internal representation (multiply by 1000)
+    const priceInContractFormat = Math.floor(Number(pricePerShare) * 1000);
     const maxSupplyU128 = maxSupply === "0" ? "0" : Math.floor(Number(maxSupply)).toString();
 
     console.log("Create share class parameters:", {
@@ -122,7 +126,7 @@ export class AptosService {
       symbol: symbolBytes,
       decimals,
       underlyingTokenAddr,
-      pricePerShare: priceInSmallestUnit,
+      pricePerShare: priceInContractFormat,
       maxSupply: maxSupplyU128
     });
 
@@ -135,7 +139,7 @@ export class AptosService {
         symbolBytes, // vector<u8> symbol
         decimals.toString(), // u8 decimals
         underlyingTokenAddr, // address underlying_token_addr
-        priceInSmallestUnit.toString(), // u64 price_per_share
+        priceInContractFormat.toString(), // u64 price_per_share (with 1000 factor)
         maxSupplyU128 // u128 max_supply
       ]
     };
@@ -248,9 +252,9 @@ export class AptosService {
     await this.validateWalletConnection();
     await this.validateNetwork();
 
-    // Convert price to u64 format
-    const priceInSmallestUnit = Math.floor(Number(newPrice));
-    console.log("New price in smallest unit:", priceInSmallestUnit);
+    // Convert user-friendly price to contract's internal representation (multiply by 1000)
+    const priceInContractFormat = Math.floor(Number(newPrice) * 1000);
+    console.log("New price in contract format:", priceInContractFormat, "(user input:", newPrice, "* 1000)");
 
     // Build the transaction payload for Petra
     const payload: TransactionPayload = {
@@ -258,7 +262,7 @@ export class AptosService {
       type_arguments: [],
       arguments: [
         shareClassId, // The fungible asset metadata object address
-        priceInSmallestUnit.toString() // u64 new price as string
+        priceInContractFormat.toString() // u64 new price with 1000 factor
       ]
     };
 

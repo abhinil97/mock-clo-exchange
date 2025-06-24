@@ -1,12 +1,10 @@
-"use client";
-
 import { useState, useEffect } from "react";
-import { useAptos } from "./providers/AptosProvider";
+import { useAptos } from "../providers/AptosProvider";
 import { convertAmountFromOnChainToHumanReadable } from "@aptos-labs/ts-sdk";
-import CreateShareClass from "./pages/CreateShareClass";
-import Invest from "./pages/Invest";
-import Withdraw from "./pages/Withdraw";
-import UpdatePrice from "./pages/UpdatePrice";
+import CreateShareClass from "../pages/CreateShareClass";
+import Invest from "../pages/Invest";
+import Withdraw from "../pages/Withdraw";
+import UpdatePrice from "../pages/UpdatePrice";
 
 // Window.aptos types are defined in types/petra.d.ts
 
@@ -374,4 +372,4 @@ export default function Home() {
       </footer>
     </div>
   );
-}
+} 

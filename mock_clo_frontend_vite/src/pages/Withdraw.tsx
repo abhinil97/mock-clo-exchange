@@ -9,7 +9,7 @@ import { WalletProps, WithdrawType, InputMode } from "../types/common";
 
 // Window interface for Petra wallet is defined in page.tsx
 
-export default function Withdraw({ walletAddress, aptBalance, usdcBalance }: WalletProps) {
+export default function Withdraw({ walletAddress }: WalletProps) {
   const [shareClassId, setShareClassId] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawType, setWithdrawType] = useState<WithdrawType>("full");

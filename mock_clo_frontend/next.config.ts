@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   webpack: (config, { isServer }) => {
     if (!isServer) {
-      // Configure webpack to use browser-compatible versions
+      // Configure webpack fallbacks for browser compatibility
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
@@ -18,14 +18,16 @@ const nextConfig: NextConfig = {
         assert: false,
         os: false,
         path: false,
+        buffer: false,
+        process: false,
+        util: false,
       };
       
-      // Exclude Node.js specific modules
+      // Exclude problematic Node.js modules
       config.externals = config.externals || [];
-      config.externals.push({
-        'got': 'got',
-        'node-fetch': 'node-fetch',
-      });
+      if (Array.isArray(config.externals)) {
+        config.externals.push('got', 'node-fetch');
+      }
     }
     
     return config;

@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { useAptos } from "../providers/AptosProvider";
 import { AptosService } from "../services/aptosService";
@@ -161,7 +159,7 @@ export default function Withdraw({ walletAddress }: WalletProps) {
               id="shareClassSelect"
               value={shareClassId}
               onChange={(e) => setShareClassId(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 rounded-md bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               disabled={isLoading}
             >
               <option value="">Select a share class...</option>
@@ -206,7 +204,7 @@ export default function Withdraw({ walletAddress }: WalletProps) {
               type="text"
               value={shareClassId}
               onChange={(e) => setShareClassId(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                             className="px-4 py-2 border border-gray-300 rounded-md bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
               placeholder="0x..."
               disabled={isLoading}
             />
@@ -287,7 +285,7 @@ export default function Withdraw({ walletAddress }: WalletProps) {
             step="0.01"
             value={withdrawAmount}
             onChange={(e) => setWithdrawAmount(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-300 rounded-md bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder={`Max: ${formatBalance(shareClassBalance, shareClassId)}`}
             disabled={isLoading}
           />

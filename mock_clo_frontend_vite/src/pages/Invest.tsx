@@ -153,7 +153,11 @@ export default function Invest({ walletAddress, aptBalance, usdcBalance }: Walle
             </select>
             {shareClassId && (
               <div className="text-xs text-gray-500 space-y-1">
-                <p className="font-mono">
+                <p 
+                  className="font-mono cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200 px-1 py-0.5 rounded"
+                  title={`Click to copy full share class address: ${shareClassId}`}
+                  onClick={() => CalculationService.copyToClipboard(shareClassId, "Share Class Address")}
+                >
                   {formatAddress(shareClassId)}
                 </p>
                 {shareClassId !== USDC_METADATA && (
@@ -299,7 +303,11 @@ export default function Invest({ walletAddress, aptBalance, usdcBalance }: Walle
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Module:</span>
-            <span className="font-mono text-xs truncate max-w-[200px]" title={MODULE_ADDRESS}>
+            <span 
+              className="font-mono text-xs truncate max-w-[200px] cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200 px-1 py-0.5 rounded"
+              title={`Click to copy full module address: ${MODULE_ADDRESS}`}
+              onClick={() => CalculationService.copyToClipboard(MODULE_ADDRESS, "Module Address")}
+            >
               {CalculationService.formatAddress(MODULE_ADDRESS)}
             </span>
           </div>
@@ -316,7 +324,11 @@ export default function Invest({ walletAddress, aptBalance, usdcBalance }: Walle
         <div className="bg-green-50 border border-green-200 p-3 rounded-md">
           <p className="text-sm text-green-800">
             Transaction submitted! Hash: 
-            <span className="font-mono text-xs ml-1">
+            <span 
+              className="font-mono text-xs ml-1 cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200 px-1 py-0.5 rounded"
+              title={`Click to copy full transaction hash: ${transactionHash}`}
+              onClick={() => CalculationService.copyToClipboard(transactionHash, "Transaction Hash")}
+            >
               {CalculationService.formatAddress(transactionHash, 10, 8)}
             </span>
           </p>

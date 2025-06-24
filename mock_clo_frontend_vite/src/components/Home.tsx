@@ -5,6 +5,7 @@ import CreateShareClass from "../pages/CreateShareClass";
 import Invest from "../pages/Invest";
 import Withdraw from "../pages/Withdraw";
 import UpdatePrice from "../pages/UpdatePrice";
+import { CalculationService } from "../services/calculationService";
 
 // Window.aptos types are defined in types/petra.d.ts
 
@@ -283,7 +284,11 @@ export default function Home() {
                       </span>
                     </div>
                     
-                    <span className="text-sm font-medium text-white">
+                    <span 
+                      className="text-sm font-medium text-white cursor-pointer hover:bg-gray-700 transition-colors duration-200 px-1 py-0.5 rounded"
+                      title={`Click to copy full wallet address: ${walletAddress}`}
+                      onClick={() => CalculationService.copyToClipboard(walletAddress, "Wallet Address")}
+                    >
                       {formatAddress(walletAddress)}
                     </span>
                     

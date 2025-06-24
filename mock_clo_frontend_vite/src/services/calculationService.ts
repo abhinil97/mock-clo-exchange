@@ -3,27 +3,43 @@ import { SHARE_CLASSES, USDC_METADATA } from "../constants/addresses";
 export class CalculationService {
   /**
    * Calculate estimated shares based on investment amount and exchange price
+   * With the new 1000 conversion factor: shares_minted = (underlying_amount / price_per_share) * 1000
    */
   static getEstimatedShares(investmentAmount: string, exchangePrice: string): string {
     if (!investmentAmount || !exchangePrice) return "0";
     const amount = Number(investmentAmount);
     const price = Number(exchangePrice);
     if (price <= 0) return "0";
-    return (amount / price).toFixed(6);
+    
+    // Convert to share units: (amount_in_usdc / price_per_share) * 1000
+    // But since shares have 6 decimals, we need to account for that in display
+    const shareUnits = (amount / price) * 1000;
+    // Convert to displayable share tokens (divide by 10^6 for 6 decimals)
+    const shareTokens = shareUnits / Math.pow(10, 6);
+    return shareTokens.toFixed(6);
   }
 
   /**
    * Calculate estimated cost based on shares and exchange price
+   * With the new 1000 conversion factor: underlying_returned = (share_amount * price_per_share) / 1000
    */
   static getEstimatedCost(shares: string, exchangePrice: string): string {
     if (!shares || !exchangePrice) return "0";
-    const shareAmount = Number(shares);
+    const shareTokens = Number(shares);
     const price = Number(exchangePrice);
-    return (shareAmount * price).toFixed(6);
+    
+    // Convert share tokens to share units (multiply by 10^6 for 6 decimals)
+    const shareUnits = shareTokens * Math.pow(10, 6);
+    // Calculate underlying: (share_units * price_per_share) / 1000
+    const underlyingAmount = (shareUnits * price) / 1000;
+    // Convert to USDC (divide by 10^6 for 6 decimals)
+    const usdcAmount = underlyingAmount / Math.pow(10, 6);
+    return usdcAmount.toFixed(6);
   }
 
   /**
    * Calculate estimated USDC value for withdrawal
+   * With the new 1000 conversion factor: underlying_returned = (share_amount * price_per_share) / 1000
    */
   static getEstimatedWithdrawalValue(
     withdrawAmount: string, 
@@ -33,9 +49,16 @@ export class CalculationService {
   ): string {
     const amount = withdrawType === "full" ? shareClassBalance : withdrawAmount;
     if (!amount || !exchangePrice) return "0";
-    const amountNum = Number(amount);
+    const shareTokens = Number(amount);
     const price = Number(exchangePrice);
-    return (amountNum * price).toFixed(6);
+    
+    // Convert share tokens to share units (multiply by 10^6 for 6 decimals)
+    const shareUnits = shareTokens * Math.pow(10, 6);
+    // Calculate underlying: (share_units * price_per_share) / 1000
+    const underlyingAmount = (shareUnits * price) / 1000;
+    // Convert to USDC (divide by 10^6 for 6 decimals)
+    const usdcAmount = underlyingAmount / Math.pow(10, 6);
+    return usdcAmount.toFixed(6);
   }
 
   /**
@@ -113,6 +136,7 @@ export class CalculationService {
 
   /**
    * Calculate inline conversion estimate for UI
+   * With the new 1000 conversion factor for more granular pricing
    */
   static getInlineConversionEstimate(
     amount: string, 
@@ -125,9 +149,51 @@ export class CalculationService {
     const price = Number(exchangePrice);
     
     if (direction === "toShares") {
-      return (amountNum / price).toFixed(6);
+      // Convert USDC to share tokens: (amount_in_usdc / price_per_share) * 1000 / 10^6
+      const shareUnits = (amountNum / price) * 1000;
+      const shareTokens = shareUnits / Math.pow(10, 6);
+      return shareTokens.toFixed(6);
     } else {
-      return (amountNum * price).toFixed(6);
+      // Convert share tokens to USDC: (share_tokens * 10^6 * price_per_share) / 1000 / 10^6
+      const shareUnits = amountNum * Math.pow(10, 6);
+      const underlyingAmount = (shareUnits * price) / 1000;
+      const usdcAmount = underlyingAmount / Math.pow(10, 6);
+      return usdcAmount.toFixed(6);
     }
+  }
+
+  /**
+   * Copy address to clipboard and show user feedback
+   */
+  static async copyToClipboard(address: string, label?: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(address);
+      // Show temporary feedback
+      const displayLabel = label || "Address";
+      alert(`✅ ${displayLabel} copied to clipboard!\n\n${address}`);
+    } catch (error) {
+      console.error("Failed to copy to clipboard:", error);
+      // Fallback: show address in alert for manual copying
+      const displayLabel = label || "Address";
+      alert(`📋 Copy ${displayLabel}:\n\n${address}`);
+    }
+  }
+
+  /**
+   * Create a clickable address component that copies on click
+   */
+  static createClickableTruncatedAddress(
+    fullAddress: string, 
+    label?: string
+  ): {
+    onClick: () => Promise<void>;
+    title: string;
+    style: string;
+  } {
+    return {
+      onClick: () => this.copyToClipboard(fullAddress, label),
+      title: `Click to copy full ${label || "address"}: ${fullAddress}`,
+      style: "cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200 px-1 py-0.5 rounded"
+    };
   }
 } 

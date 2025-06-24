@@ -113,13 +113,28 @@ export default function UpdatePrice({ walletAddress }: WalletProps) {
           )}
         </div>
         <p className="text-xs mt-1 text-gray-600">
-          Admin Address: <span className="font-mono">{CalculationService.formatAddress(ADMIN_ADDRESS)}</span>
+          Admin Address: <span 
+            className="font-mono cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200 px-1 py-0.5 rounded"
+            title={`Click to copy full admin address: ${ADMIN_ADDRESS}`}
+            onClick={() => CalculationService.copyToClipboard(ADMIN_ADDRESS, "Admin Address")}
+          >
+            {CalculationService.formatAddress(ADMIN_ADDRESS)}
+          </span>
         </p>
         {walletAddress && (
           <p className="text-xs text-gray-600">
-            Your Address: <span className="font-mono">{CalculationService.formatAddress(walletAddress)}</span>
+            Your Address: <span 
+              className="font-mono cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200 px-1 py-0.5 rounded"
+              title={`Click to copy full wallet address: ${walletAddress}`}
+              onClick={() => CalculationService.copyToClipboard(walletAddress, "Wallet Address")}
+            >
+              {CalculationService.formatAddress(walletAddress)}
+            </span>
           </p>
         )}
+        <p className="text-xs mt-2 text-blue-600">
+          💡 Tip: Click on any truncated address to copy the full address to clipboard!
+        </p>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -175,7 +190,11 @@ export default function UpdatePrice({ walletAddress }: WalletProps) {
             </select>
             {shareClassId && (
               <div className="text-xs text-gray-500 space-y-1">
-                <p className="font-mono">
+                <p 
+                  className="font-mono cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200 px-1 py-0.5 rounded"
+                  title={`Click to copy full share class address: ${shareClassId}`}
+                  onClick={() => CalculationService.copyToClipboard(shareClassId, "Share Class Address")}
+                >
                   {formatAddress(shareClassId)}
                 </p>
                 <div className="flex justify-between items-center">
@@ -206,6 +225,13 @@ export default function UpdatePrice({ walletAddress }: WalletProps) {
             </div>
             {shareClassId && (
               <div className="text-xs text-gray-500 space-y-1">
+                <p 
+                  className="font-mono cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200 px-1 py-0.5 rounded"
+                  title={`Click to copy full share class address: ${shareClassId}`}
+                  onClick={() => CalculationService.copyToClipboard(shareClassId, "Share Class Address")}
+                >
+                  {formatAddress(shareClassId)}
+                </p>
                 <div className="flex justify-between items-center">
                   <span>Current Price:</span>
                   <span className="font-semibold">
@@ -299,7 +325,11 @@ export default function UpdatePrice({ walletAddress }: WalletProps) {
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Module:</span>
-            <span className="font-mono text-xs truncate max-w-[200px]" title={MODULE_ADDRESS}>
+            <span 
+              className="font-mono text-xs truncate max-w-[200px] cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200 px-1 py-0.5 rounded" 
+              title={`Click to copy full module address: ${MODULE_ADDRESS}`}
+              onClick={() => CalculationService.copyToClipboard(MODULE_ADDRESS, "Module Address")}
+            >
               {CalculationService.formatAddress(MODULE_ADDRESS)}
             </span>
           </div>
@@ -325,7 +355,11 @@ export default function UpdatePrice({ walletAddress }: WalletProps) {
         <div className="bg-green-50 border border-green-200 p-3 rounded-md">
           <p className="text-sm text-green-800">
             Price update submitted! Hash: 
-            <span className="font-mono text-xs ml-1">
+            <span 
+              className="font-mono text-xs ml-1 cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200 px-1 py-0.5 rounded"
+              title={`Click to copy full transaction hash: ${transactionHash}`}
+              onClick={() => CalculationService.copyToClipboard(transactionHash, "Transaction Hash")}
+            >
               {CalculationService.formatAddress(transactionHash, 10, 8)}
             </span>
           </p>

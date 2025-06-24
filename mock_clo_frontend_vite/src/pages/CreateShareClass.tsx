@@ -121,11 +121,23 @@ export default function CreateShareClass({ walletAddress }: WalletProps) {
           )}
         </div>
         <p className="text-xs mt-1 text-gray-600">
-          Admin Address: <span className="font-mono">{CalculationService.formatAddress(ADMIN_ADDRESS)}</span>
+          Admin Address: <span 
+            className="font-mono cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200 px-1 py-0.5 rounded"
+            title={`Click to copy full admin address: ${ADMIN_ADDRESS}`}
+            onClick={() => CalculationService.copyToClipboard(ADMIN_ADDRESS, "Admin Address")}
+          >
+            {CalculationService.formatAddress(ADMIN_ADDRESS)}
+          </span>
         </p>
         {walletAddress && (
           <p className="text-xs text-gray-600">
-            Your Address: <span className="font-mono">{CalculationService.formatAddress(walletAddress)}</span>
+            Your Address: <span 
+              className="font-mono cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200 px-1 py-0.5 rounded"
+              title={`Click to copy full wallet address: ${walletAddress}`}
+              onClick={() => CalculationService.copyToClipboard(walletAddress, "Wallet Address")}
+            >
+              {CalculationService.formatAddress(walletAddress)}
+            </span>
           </p>
         )}
       </div>
@@ -286,15 +298,23 @@ export default function CreateShareClass({ walletAddress }: WalletProps) {
             <span className="text-gray-600">Symbol:</span>
             <span>{symbol || "Not set"}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex flex-col gap-1">
             <span className="text-gray-600">Underlying:</span>
-            <span className="font-mono text-xs truncate max-w-[120px]" title={underlyingTokenAddr}>
+            <span 
+              className="font-mono text-xs cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200 px-1 py-0.5 rounded"
+              title={`Click to copy full underlying token address: ${underlyingTokenAddr}`}
+              onClick={() => CalculationService.copyToClipboard(underlyingTokenAddr, "Underlying Token Address")}
+            >
               {CalculationService.formatAddress(underlyingTokenAddr)}
             </span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex flex-col gap-1">
             <span className="text-gray-600">Module:</span>
-            <span className="font-mono text-xs truncate max-w-[200px]" title={MODULE_ADDRESS}>
+            <span 
+              className="font-mono text-xs cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200 px-1 py-0.5 rounded"
+              title={`Click to copy full module address: ${MODULE_ADDRESS}`}
+              onClick={() => CalculationService.copyToClipboard(MODULE_ADDRESS, "Module Address")}
+            >
               {CalculationService.formatAddress(MODULE_ADDRESS)}
             </span>
           </div>
@@ -320,10 +340,14 @@ export default function CreateShareClass({ walletAddress }: WalletProps) {
         <div className="bg-green-50 border border-green-200 p-3 rounded-md">
           <p className="text-sm text-green-800">
             Share class created! Hash: 
-            <span className="font-mono text-xs ml-1">
-              {CalculationService.formatAddress(transactionHash, 10, 8)}
-            </span>
           </p>
+          <span 
+            className="font-mono text-xs cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200 px-1 py-0.5 rounded"
+            title={`Click to copy full transaction hash: ${transactionHash}`}
+            onClick={() => CalculationService.copyToClipboard(transactionHash, "Transaction Hash")}
+          >
+            {CalculationService.formatAddress(transactionHash, 10, 8)}
+          </span>
         </div>
       )}
 
